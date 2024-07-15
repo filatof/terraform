@@ -88,10 +88,6 @@
         replace: '{{ ansible_default_ipv4.address }}'
         backup: yes
 
-    - name: Install packages based on package.json.
-      npm:
-        path: "{{ release_path }}"
-
     - name: YARN install
       command: "yarn install"
       args:
