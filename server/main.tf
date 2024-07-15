@@ -18,7 +18,7 @@ data "twc_os" "os" {
 }
 
 data "twc_ssh_keys" "my_ssh_key" {
-  name = "fill@Macmini.local"
+  name = "fill@MacBookAir.local"
 }
 
 resource "twc_server" "openvpn-server" {
