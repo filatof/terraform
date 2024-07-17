@@ -7,6 +7,7 @@ terraform {
   }
   required_version = ">= 0.13"
 
+
 #---------загрузка файла состояний в s3-------------
   backend "s3" {
     endpoints = {
