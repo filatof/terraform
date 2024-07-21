@@ -1,0 +1,132 @@
+---
+- name: It will automate react-app setup
+  hosts: react_servers
+  become: true
+  vars:
+    project_path: /var/www
+    repositiry: https://github.com/filatof/my-test-react.git
+    packages:
+       - nginx
+       - nodejs
+       - yarn
+
+  tasks:
+    #---------Удалим nginx если он стоит на сервере 
+    - name: "Ensure Nginx is not installed"
+      apt:
+        name: nginx
+        state: absent
+      tags: remove_nginx
+
+    - name: "Delete the html file"
+      file:
+         path: "{{ project_path }}/html"
+         state: absent
+
+    - name: "Yarn | GPG"
+      apt_key:
+        url: https://dl.yarnpkg.com/debian/pubkey.gpg
+        state: present
+
+    - name: "Yarn | Ensure Debian sources list file exists"
+      file:
+        path: /etc/apt/sources.list.d/yarn.list
+        owner: root
+        mode: 0644
+        state: touch
+
+    - name: "Yarn | Ensure Debian package is in sources list"
+      lineinfile:
+        dest: /etc/apt/sources.list.d/yarn.list
+        regexp: 'deb http://dl.yarnpkg.com/debian/ stable main'
+        line: 'deb http://dl.yarnpkg.com/debian/ stable main'
+        state: present
+
+    - name: Download Node.js setup script
+      get_url:
+        url: https://deb.nodesource.com/setup_21.x
+        dest: /tmp/setup_21.x
+        mode: '0755'
+
+    - name: Run Node.js setup script
+      command: /tmp/setup_21.x
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop: "{{ packages }}"
+        
+    - name: Delete the html file 
+      file:
+        path: "{{ project_path }}/html"
+        state: absent
+    
+    - name: "Stop service Nginx"
+      ansible.builtin.systemd:
+        name: nginx
+        state: stopped
+
+    - name: Set some variable
+      set_fact:
+        release_path: "{{ project_path }}/releases/{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
+        current_path: "{{ project_path }}/html"
+      tags: start_yarn
+
+    - name: Create project path
+      file:
+        dest={{ project_path }}
+        mode=0755
+        recurse=yes
+        state=directory
+
+    - name: Create Release folder
+      file:
+        dest={{ release_path }}
+        mode=0755
+        recurse=yes
+        state=directory
+
+    - name: Clone the repository
+      git:
+        repo: "{{ repositiry }}"
+        dest: "{{ release_path }}"
+
+
+    - name: Add IP address of instance to main site 
+      replace:
+        path: "{{ release_path }}/src/App.js"
+        regexp: 'Test of revert'
+        replace: '{{ ansible_default_ipv4.address }}'
+        backup: yes
+
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+
+    - name: YARN install
+      command: "yarn install"
+      args:
+        chdir: "{{ release_path }}"
+
+    - name: Start application 
+      command: "pm2 start --name ReactJS yarn --interpreter bash -- start"
+      args:
+        chdir: "{{ release_path }}"
+      environment:
+        PORT: 80
+      tags: start_yarn
+
+
+
+
+
+
+        

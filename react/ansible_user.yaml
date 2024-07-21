@@ -1,0 +1,45 @@
+---
+- name: "Create user account"
+  hosts: react_servers
+  vars:
+  - users:
+    - ansible
+    - filatof
+  tasks:
+    - name: "Ensure the Ansible account exist"
+      user: 
+        name: "{{ item }}" # Двойные фигурные скобки используются для обращения к каждому элементу в списке, по кс
+        groups: ["sudo"] # Добавляем нашего нового пользователя в группы admin и sudo, чтобы у него были
+        shell: /bin/bash
+      loop: "{{ users }}" # Так выглядит цикл в Ansible. В данном случае мы пробегаем по списку пользователей, кол
+      tags: create_user_accounts
+    # Добавляем созданный SSH ключ для авторизации на сервере в authorized_key
+    - name: "Ensure authorized keys created"
+      authorized_key: 
+         user: "{{ item }}"
+         key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}" # Здесь снова мы получаем имя ключа через item и скле
+      loop: "{{ users }}"
+      ignore_errors: yes
+    # Linefile позволит нам изменить информацию в файле sudoers
+    - name: "Allow sudo users to sudo without a password"
+      lineinfile: 
+         dest: "/etc/sudoers"
+         state: present
+         regexp: "^%sudo"
+         line: "%sudo ALL=(ALL:ALL) NOPASSWD: ALL"
+    # А также изменить метод аутентификации на сервере 
+    - name: Disable Password Authentication
+      lineinfile:
+         dest: /etc/ssh/sshd_config 
+         regexp: '^PasswordAuthentication'
+         line: "PasswordAuthentication no" 
+         state: present
+         backup: yes
+      notify:
+        - restart ssh
+  
+  handlers:
+    - name: restart ssh
+      service: # В данном случае используется модуль service
+        name: sshd
+        state: restarted # Который для нас перезагрузит сервис SSHD
