@@ -1,12 +1,28 @@
 ---
 - name: It will automate react-app setup
-  hosts: nginx_servers
+  hosts: react_servers
   become: true
   vars:
     project_path: /var/www
     repositiry: https://github.com/filatof/my-test-react.git
+    packages:
+       - nginx
+       - nodejs
+       - yarn
 
   tasks:
+    #---------Удалим nginx если он стоит на сервере 
+    - name: "Ensure Nginx is not installed"
+      apt:
+        name: nginx
+        state: absent
+      tags: remove_nginx
+      
+    - name: "Delete the html file"
+      file:
+         path: "{{ project_path }}/html"
+         state: absent
+
     - name: "Yarn | GPG"
       apt_key:
         url: https://dl.yarnpkg.com/debian/pubkey.gpg
@@ -45,11 +61,8 @@
         name: "{{ item }}"
         state: present
         update_cache: yes
-      loop:
-        - yarn
-        - nginx
-        - nodejs
-    
+      loop: "{{ packages }}"
+        
     - name: Delete the html file 
       file:
         path: "{{ project_path }}/html"
