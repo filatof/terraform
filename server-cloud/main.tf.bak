@@ -1,0 +1,59 @@
+terraform {
+  required_providers {
+    sbercloud = {
+      source  = "sbercloud-terraform/sbercloud" # Initialize Advanced provider
+    }
+  }
+}
+
+# Configure Advanced provider
+provider "sbercloud" {
+  auth_url = "https://iam.ru-moscow-1.hc.sbercloud.ru/v3" # Authorization address
+  region   = "ru-moscow-1" # The region where the cloud infrastructure will be deployed
+
+  # Authorization keys
+  access_key = var.access_key
+  secret_key = var.secret_key
+}
+
+variable "secgroup_id" {}
+
+# resource "sbercloud_networking_secgroup" "secgroup_1" {
+#   name        = "default"
+#   description = "My neutron security group"
+# }
+variable "existing_secgroup_id" {
+  description = "ID of the existing security group"
+  type        = string
+  default     = "e8384786-49c1-42ba-844b-e3a298dd6fd1"
+}
+
+data "sbercloud_availability_zones" "myaz" {}
+
+data "sbercloud_compute_flavors" "myflavor" {
+  availability_zone = data.sbercloud_availability_zones.myaz.names[0]
+  performance_type  = "normal"
+  cpu_core_count    = 2
+  memory_size       = 4
+}
+
+data "sbercloud_vpc_subnet" "subnet" {
+  name = "my-test-subnet"
+}
+
+data "sbercloud_images_image" "myimage" {
+  name        = "Ubuntu 18.04 server 64bit"
+  most_recent = true
+}
+
+resource "sbercloud_compute_instance" "basic" {
+  name               = "basic"
+  image_id           = data.sbercloud_images_image.myimage.id
+  flavor_id          = data.sbercloud_compute_flavors.myflavor.ids[0]
+  security_group_ids = [var.existing_secgroup_id]
+  availability_zone  = data.sbercloud_availability_zones.myaz.names[0]
+
+  network {
+    uuid = data.sbercloud_vpc_subnet.subnet.id
+  }
+}

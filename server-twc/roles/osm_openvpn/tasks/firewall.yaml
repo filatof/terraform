@@ -6,7 +6,8 @@
   when: ansible_distribution == "Ubuntu" or ansible_distribution=="Debian"
 
 - name: Enable ipv4 forwarding
-  sysctl:
+  #sysctl:
+  ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: 1
     sysctl_set: true
