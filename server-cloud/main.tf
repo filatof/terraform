@@ -16,7 +16,6 @@ terraform {
   }
 }
 
-
 provider "sbercloud" {
   auth_url   = "https://iam.ru-moscow-1.hc.sbercloud.ru/v3"
   region     = "ru-moscow-1"
@@ -41,14 +40,23 @@ resource "sbercloud_networking_secgroup" "secgroup" {
   description = "Default security group"
 }
 
+# resource "sbercloud_vpc_address_group" "ipv4" {
+#   name = "group-ipv4"
+
+#   addresses = [
+#      "0.0.0.0/0"  # Все IP-адреса
+#   ]
+# }
+
 resource "sbercloud_networking_secgroup_rule" "ssh" {
   direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 22
-  port_range_max    = 22
-  remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = sbercloud_networking_secgroup.secgroup.id
+  action                  = "allow"
+  ethertype               = "IPv4"
+  ports                   = "22,80,443"
+  protocol                = "tcp"
+  priority                = 5
+  remote_ip_prefix  = "0.0.0.0/0"  # Разрешить со всех IP-адресов
 }
 
 resource "sbercloud_compute_keypair" "keypair" {
@@ -94,6 +102,7 @@ resource "sbercloud_compute_instance" "basic" {
   key_pair           = sbercloud_compute_keypair.keypair.name
   security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
   availability_zone  = "ru-moscow-1a"
+  #user_data          = file("user_data.sh") #не работает так, скрипт не запускается
 
   network {
     uuid = sbercloud_vpc_subnet.my_subnet.id
