@@ -3,7 +3,6 @@
 .terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
-hosts
 storage.key
 key.json
-
+variables.tf

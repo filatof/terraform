@@ -1,0 +1,2 @@
+[openvpn]
+ubuntu ansible_host=147.45.230.219 ansible_port=22 ansible_user='root' ansible_ssh_private_key_file='/Users/fill/.ssh/id_ed25519'
