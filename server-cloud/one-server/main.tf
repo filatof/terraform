@@ -1,4 +1,5 @@
 terraform {
+  #сохраним файл состояния в бакете
   backend "s3" {
     bucket   = "terraformbucket"
     key      = "terraform.tfstate"
@@ -40,14 +41,6 @@ resource "sbercloud_networking_secgroup" "secgroup" {
   description = "Default security group"
 }
 
-# resource "sbercloud_vpc_address_group" "ipv4" {
-#   name = "group-ipv4"
-
-#   addresses = [
-#      "0.0.0.0/0"  # Все IP-адреса
-#   ]
-# }
-
 resource "sbercloud_networking_secgroup_rule" "ssh" {
   direction         = "ingress"
   security_group_id = sbercloud_networking_secgroup.secgroup.id
@@ -66,7 +59,8 @@ resource "sbercloud_compute_keypair" "keypair" {
 
 
 data "sbercloud_images_image" "ubuntu" {
-  name        = "Ubuntu 18.04 server 64bit"
+  name        = "Ubuntu 22.04 server 64bit"
+  os_version = "Ubuntu 22.04 server 64bit"
   most_recent = true
 }
 
@@ -94,7 +88,7 @@ resource "sbercloud_compute_eip_associate" "associated" {
   instance_id = sbercloud_compute_instance.basic.id
 }
 
-
+#создаем виртуальную машину
 resource "sbercloud_compute_instance" "basic" {
   name               = "ubuntu-instance"
   image_id           = data.sbercloud_images_image.ubuntu.id
@@ -103,6 +97,7 @@ resource "sbercloud_compute_instance" "basic" {
   security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
   availability_zone  = "ru-moscow-1a"
   #user_data          = file("user_data.sh") #не работает так, скрипт не запускается
+  user_data          = file("${path.module}/user_data.yaml")
 
   network {
     uuid = sbercloud_vpc_subnet.my_subnet.id
