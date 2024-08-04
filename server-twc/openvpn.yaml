@@ -1,6 +1,6 @@
 ---
 - name: It will automate OpenVPN setup
-  hosts: you-ovpn-server
+  hosts: openvpn
   become: true
   roles:
     - role: osm_openvpn
