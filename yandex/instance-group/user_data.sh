@@ -2,7 +2,7 @@
 sudo apt update -y
 sudo apt install nginx -y
 systemctl start nginx
-sed -i -- "s/nginx/${HOSTNAME}/" /var/www/html/index.nginx-debian.html
+sudo sed -i -- "s/nginx/${HOSTNAME}/" /var/www/html/index.nginx-debian.html
 systemctl reload nginx
 # exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 # cd /home/ubuntu/

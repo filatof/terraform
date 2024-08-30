@@ -1,4 +1,5 @@
 terraform {
+  #сохраним файл состояния в бакете
   backend "s3" {
     bucket   = "terraformbucket"
     key      = "terraform.tfstate"
@@ -6,8 +7,8 @@ terraform {
     endpoint = "https://obs.ru-moscow-1.hc.sbercloud.ru"
     skip_region_validation      = true
     skip_credentials_validation = true
-    skip_requesting_account_id  = true
-    skip_s3_checksum            = true
+    skip_requesting_account_id  = true # Необходимая опция Terraform для версии 1.6.1 и старше.
+    skip_s3_checksum            = true # Необходимая опция при описании бэкенда для Terraform версии 1.6.3 и старше.
   }
   required_providers {
     sbercloud = {
@@ -45,16 +46,17 @@ resource "sbercloud_networking_secgroup_rule" "ssh" {
   security_group_id = sbercloud_networking_secgroup.secgroup.id
   action                  = "allow"
   ethertype               = "IPv4"
-  ports                   = "22,80,443,3000,3100,9080,9090,9095,9100,9113"
+  ports                   = "22,80,443"
   protocol                = "tcp"
   priority                = 5
-  remote_ip_prefix  = "0.0.0.0/0"
+  remote_ip_prefix  = "0.0.0.0/0"  # Разрешить со всех IP-адресов
 }
 
 resource "sbercloud_compute_keypair" "keypair" {
   name      = var.ssh_key_name
   public_key = var.ssh_public_key
 }
+
 
 data "sbercloud_images_image" "ubuntu" {
   name        = "Ubuntu 22.04 server 64bit"
@@ -70,7 +72,6 @@ data "sbercloud_compute_flavors" "minimal" {
 }
 
 resource "sbercloud_vpc_eip" "my_eip" {
-  count = 1
   publicip {
     type = "5_bgp"
   }
@@ -83,19 +84,19 @@ resource "sbercloud_vpc_eip" "my_eip" {
 }
 
 resource "sbercloud_compute_eip_associate" "associated" {
-  count      = 1
-  public_ip  = sbercloud_vpc_eip.my_eip[count.index].address
-  instance_id = sbercloud_compute_instance.basic[count.index].id
+  public_ip   = sbercloud_vpc_eip.my_eip.address
+  instance_id = sbercloud_compute_instance.basic.id
 }
 
+#создаем виртуальную машину
 resource "sbercloud_compute_instance" "basic" {
-  count              = 3
-  name               = "ubuntu-instance-${count.index + 1}"
+  name               = "ubuntu-instance"
   image_id           = data.sbercloud_images_image.ubuntu.id
   flavor_id          = data.sbercloud_compute_flavors.minimal.ids[0]
   key_pair           = sbercloud_compute_keypair.keypair.name
   security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
   availability_zone  = "ru-moscow-1a"
+  #user_data          = file("user_data.sh") #не работает так, скрипт не запускается
   user_data          = file("${path.module}/user_data.yaml")
 
   network {
@@ -103,25 +104,17 @@ resource "sbercloud_compute_instance" "basic" {
   }
 }
 
-output "instance_ips" {
-  value = [for eip in sbercloud_vpc_eip.my_eip : eip.address]
-}
-
-resource "sbercloud_dns_zone" "example_zone" {
-  name        = "infrastruct.ru."
-  email       = "filatof@gmail.com"
-  description = "a public zone"
-  ttl         = 6000
-  zone_type   = "public"
+output "instance_ip" {
+  value = sbercloud_vpc_eip.my_eip.address
 }
 
 resource "sbercloud_dns_recordset" "test" {
-  zone_id     = sbercloud_dns_zone.example_zone.id
+  zone_id     = "f8232a16-a39e-49f4-b57d-52453e094990"
   name        = "www.infrastruct.ru."
   description = "An example record set"
   ttl         = 3000
   type        = "A"
-  records     = [for eip in sbercloud_vpc_eip.my_eip : eip.address]
+  records     = [ sbercloud_vpc_eip.my_eip.address ]
+  region     = "ru-moscow-1"
 }
-
 

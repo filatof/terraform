@@ -29,7 +29,7 @@ resource "twc_server" "openvpn-server" {
   configuration {
     configurator_id = data.twc_configurator.configurator.id
     disk = 1024 * 40
-    cpu = 1
+    cpu = 2
     ram = 2048
   }
  ssh_keys_ids = [data.twc_ssh_keys.my_ssh_key.id]

@@ -77,7 +77,7 @@ resource "yandex_compute_instance_group" "web-group" {
     metadata = {
       user-data = "${file("~/metafile.yaml")}"
       #ssh-keys = "fill:${file("~/.ssh/id_ed25519.pub")}"
-      user-data = "${file("user_data.sh")}"
+      #user-data = "${file("user_data.sh")}"
 
     }
     network_settings {
@@ -113,6 +113,14 @@ resource "yandex_lb_network_load_balancer" "web" {
   listener {
     name = "web-listener"
     port = 80
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
+  
+  listener {
+    name = "app-listener"
+    port = 8080
     external_address_spec {
       ip_version = "ipv4"
     }
