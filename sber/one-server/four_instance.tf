@@ -1,3 +1,6 @@
+#Создает четыре инстанса. Один с публичным ip
+#Настраивает nat. Все ходят через него в инет
+
 terraform {
   backend "s3" {
     bucket   = "terraformbucket"
@@ -95,26 +98,55 @@ resource "sbercloud_vpc_eip" "my_eip" {
 resource "sbercloud_compute_eip_associate" "associated" {
   count      = 1
   public_ip  = sbercloud_vpc_eip.my_eip[count.index].address
-  instance_id = sbercloud_compute_instance.basic[count.index].id
+  instance_id = sbercloud_compute_instance.nat_instance[count.index].id
 }
 
-resource "sbercloud_compute_instance" "basic" {
-  count              = 4
-  name               = "ubuntu-instance-${count.index + 1}"
+resource "sbercloud_compute_instance" "nat_instance" {
+  count              = 1
+  name               = "nat-instance"
   image_id           = data.sbercloud_images_image.ubuntu.id
   flavor_id          = data.sbercloud_compute_flavors.minimal.ids[0]
   key_pair           = sbercloud_compute_keypair.keypair.name
   security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
   availability_zone  = "ru-moscow-1a"
-  user_data          = file("${path.module}/user_data.yaml")
+  user_data          = file("${path.module}/nat_user_data.yaml")
 
   network {
     uuid = sbercloud_vpc_subnet.my_subnet.id
   }
 }
 
+resource "sbercloud_compute_instance" "basic" {
+  count              = 3
+  name               = "ubuntu-instance-${count.index + 1}"
+  image_id           = data.sbercloud_images_image.ubuntu.id
+  flavor_id          = data.sbercloud_compute_flavors.minimal.ids[0]
+  key_pair           = sbercloud_compute_keypair.keypair.id
+  security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
+  availability_zone  = "ru-moscow-1a"
+  user_data          = file("${path.module}/user_data.sh")
+
+  network {
+    uuid = sbercloud_vpc_subnet.my_subnet.id
+  }
+}
+
+resource "sbercloud_vpc_route" "nat_route" {
+  vpc_id      = sbercloud_vpc.my_vpc.id
+  destination = "0.0.0.0/0"
+  type        = "ecs"  # Если nexthop это ECS
+  nexthop     = sbercloud_compute_instance.nat_instance[0].id  
+}
+
 output "instance_ips" {
   value = [for eip in sbercloud_vpc_eip.my_eip : eip.address]
+}
+
+output "private_ips" {
+  value = concat(
+    [for instance in sbercloud_compute_instance.nat_instance : instance.network[0].fixed_ip_v4],
+    [for instance in sbercloud_compute_instance.basic : instance.network[0].fixed_ip_v4]
+  )
 }
 
 resource "yandex_dns_zone" "example_zone" {

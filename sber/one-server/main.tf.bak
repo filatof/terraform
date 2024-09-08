@@ -14,7 +14,11 @@ terraform {
     sbercloud = {
       source = "sbercloud-terraform/sbercloud"
     }
+    yandex = {
+      source  = "yandex-cloud/yandex"
+    }
   }
+
 }
 
 provider "sbercloud" {
@@ -22,6 +26,12 @@ provider "sbercloud" {
   region     = "ru-moscow-1"
   access_key = var.access_key
   secret_key = var.secret_key
+}
+provider "yandex" {
+  service_account_key_file = "key.json"
+  cloud_id                 = "b1givfjnecaq6gsd91ml"
+  folder_id                = "b1g7qh7t0i4sftogmaue"
+  zone                     = "ru-central1-a"
 }
 
 resource "sbercloud_vpc" "my_vpc" {
@@ -108,13 +118,5 @@ output "instance_ip" {
   value = sbercloud_vpc_eip.my_eip.address
 }
 
-resource "sbercloud_dns_recordset" "test" {
-  zone_id     = "f8232a16-a39e-49f4-b57d-52453e094990"
-  name        = "www.infrastruct.ru."
-  description = "An example record set"
-  ttl         = 3000
-  type        = "A"
-  records     = [ sbercloud_vpc_eip.my_eip.address ]
-  region     = "ru-moscow-1"
-}
+
 

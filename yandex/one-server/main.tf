@@ -129,26 +129,26 @@ resource "yandex_compute_instance" "vm-test" {
 #    value = yandex_vpc_address.addr.external_ipv4_address.0.address
 #}
 
-resource "yandex_dns_zone" "example_zone" {
-  name        = "nanocorpinfra"
-  description = "my zone dns"
+# resource "yandex_dns_zone" "example_zone" {
+#   name        = "nanocorpinfra"
+#   description = "my zone dns"
 
-  labels = {
-    label1 = "lable_zone_dns"
-  }
+#   labels = {
+#     label1 = "lable_zone_dns"
+#   }
 
-  zone    = "nanocorpinfra.ru."
-  public  = true
-}
+#   zone    = "nanocorpinfra.ru."
+#   public  = true
+# }
 
-resource "yandex_dns_recordset" "vm-test" {
-  zone_id = yandex_dns_zone.example_zone.id
-  name    = "www.nanocorpinfra.ru."
-  type    = "A"
-  ttl     = 300
+# resource "yandex_dns_recordset" "vm-test" {
+#   zone_id = yandex_dns_zone.example_zone.id
+#   name    = "www.nanocorpinfra.ru."
+#   type    = "A"
+#   ttl     = 300
   
-  data = [yandex_compute_instance.vm-test.network_interface.0.nat_ip_address]
-}
+#   data = [yandex_compute_instance.vm-test.network_interface.0.nat_ip_address]
+# }
 
 output "external_ip2" {
   value = yandex_compute_instance.vm-test.network_interface.0.nat_ip_address
