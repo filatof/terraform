@@ -27,13 +27,6 @@
 4. Запустите `terraform plan`, чтобы увидеть, какие изменения будут применены.
 5. Выполните `terraform apply` для создания или изменения инфраструктуры.
 
-## Переменные
-
-Каждый провайдер требует настройки переменных, таких как:
-
-- YandexCloud: `cloud_id`, `folder_id`, `service_account_key_file`
-- SberCloud: `access_key`, `secret_key`, `region`
-- TimeWeb: учетные данные API
 
 ## Лицензия
 
