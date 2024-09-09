@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 sudo apt update -y
 sudo apt install nginx -y
-sudo sed -i "s/nginx/$HOSTNAME/" /var/www/html/index.nginx-debian.html
+sudo sed -i "s/nginx/'$HOSTNAME'/" /var/www/html/index.nginx-debian.html
 sudo systemctl start nginx
 
 

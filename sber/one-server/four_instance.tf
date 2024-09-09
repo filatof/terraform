@@ -109,10 +109,11 @@ resource "sbercloud_compute_instance" "nat_instance" {
   key_pair           = sbercloud_compute_keypair.keypair.name
   security_group_ids = [sbercloud_networking_secgroup.secgroup.id]
   availability_zone  = "ru-moscow-1a"
-  user_data          = file("${path.module}/nat_user_data.yaml")
+  user_data          = file("${path.module}/user_ng_proxy.sh")
 
   network {
     uuid = sbercloud_vpc_subnet.my_subnet.id
+    fixed_ip_v4 = "192.168.1.101"
   }
 }
 
@@ -128,6 +129,7 @@ resource "sbercloud_compute_instance" "basic" {
 
   network {
     uuid = sbercloud_vpc_subnet.my_subnet.id
+    fixed_ip_v4 = "192.168.1.${count.index + 102}"
   }
 }
 
@@ -160,6 +162,15 @@ resource "yandex_dns_zone" "example_zone" {
 }
 
 resource "yandex_dns_recordset" "web" {
+  zone_id = yandex_dns_zone.example_zone.id
+  name    = "infrastruct.ru."
+  type    = "A"
+  ttl     = 300
+  data =  [ sbercloud_vpc_eip.my_eip[0].address ]
+}
+
+
+resource "yandex_dns_recordset" "www" {
   zone_id = yandex_dns_zone.example_zone.id
   name    = "www.infrastruct.ru."
   type    = "A"
